@@ -483,21 +483,13 @@ function initGacha() {
     if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
 
     const reward = cardRewards[idx];
+
+    // Billion không thể lật trong lúc chơi
+    if (reward.id === 'billion') return;
+
     card.classList.add('flipped');
 
     if (pendingCard === null) {
-      // Lật thẻ đầu tiên
-      if (reward.id === 'billion') {
-        // Billion làm thẻ 1 → cho xem rồi tự úp lại, không set pending
-        hintText.textContent = '💸 5 tỷ... nhưng cần tìm thẻ cặp!';
-        lockBoard = true;
-        setTimeout(() => {
-          card.classList.remove('flipped');
-          lockBoard = false;
-          hintText.textContent = 'Lật 2 thẻ giống nhau để trúng thưởng ✨';
-        }, 1500);
-        return;
-      }
       pendingCard = card;
       pendingIdx  = idx;
       hintText.textContent = 'Chọn thẻ thứ 2 để so sánh...';
@@ -513,18 +505,6 @@ function initGacha() {
 
     const r1 = cardRewards[firstIdx];
     const r2 = reward;
-
-    // Cả 2 đều billion → "fake match" rồi slip away
-    if (r1.id === 'billion' && r2.id === 'billion') {
-      hintText.textContent = '😱 5 tỷ... 5 tỷ... ĐỢI ĐÃ—';
-      setTimeout(() => {
-        firstCard.classList.remove('flipped');
-        card.classList.remove('flipped');
-        lockBoard = false;
-        hintText.textContent = '💔 Ôi không... tuột mất rồi~ Tìm cặp khác đi em!';
-      }, 1800);
-      return;
-    }
 
     if (r1.id === r2.id && r1.tier !== 'miss') {
       // ✅ Match thật
@@ -543,9 +523,7 @@ function initGacha() {
         firstCard.classList.remove('flipped');
         card.classList.remove('flipped');
         lockBoard = false;
-        hintText.textContent = r2.id === 'billion' || r1.id === 'billion'
-          ? '💸 5 tỷ kia rồi... nhưng không có cặp~ Tiếc ghê!'
-          : 'Chưa khớp, thử lại nào ✨';
+        hintText.textContent = 'Chưa khớp, thử lại nào ✨';
       }, 1000);
     }
   }
