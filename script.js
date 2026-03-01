@@ -387,13 +387,14 @@ function initGacha() {
     billion:{ id: 'billion',    tier: 3, icon: '💰', name: '5.000.000.000 VNĐ' },
   };
 
-  // Board cố định: 2× money, 2× wash, 1× billion, 4× miss
-  // Guaranteed: money pair match được, wash pair match được, billion chỉ 1 thẻ → không thể match
+  // Board cố định: 4× money (2 cặp), 2× wash (1 cặp), 1× billion (lẻ - không thể match), 5× miss
+  // Cuối game lật hết → billion lộ ra nhưng không có cặp → tuyệt vọng
   const BOARD_TEMPLATE = [
+    R.money, R.money,
     R.money, R.money,
     R.wash,  R.wash,
     R.billion,
-    R.miss,  R.miss, R.miss, R.miss,
+    R.miss,  R.miss, R.miss, R.miss, R.miss,
   ];
 
   const TIMER_SECS    = 30;
@@ -552,30 +553,42 @@ function initGacha() {
   // ── End game & summary ───────────────────────────
   function endGame() {
     gameOver = true;
+    lockBoard = true;
     stopTimer();
     clearTimeout(hideResultTimeout);
     resultBox.classList.add('hidden');
 
-    // Lật hết thẻ còn lại
-    Array.from(grid.children).forEach(c => {
-      if (!c.classList.contains('flipped')) c.classList.add('flipped', 'dimmed');
+    // Lật hết thẻ còn lại (kể cả thẻ pending chưa so sánh)
+    Array.from(grid.children).forEach((c, i) => {
+      if (!c.classList.contains('flipped') && !c.classList.contains('matched')) {
+        c.classList.add('flipped', 'dimmed');
+      } else if (c.classList.contains('flipped') && !c.classList.contains('matched')) {
+        c.classList.add('dimmed'); // thẻ pending
+      }
+      // Billion: bỏ dimmed, thêm highlight để nổi bật
+      if (cardRewards[i] && cardRewards[i].id === 'billion') {
+        c.classList.remove('dimmed');
+        c.classList.add('billion-taunt');
+      }
     });
 
-    // Hiện summary
-    summaryEl.classList.remove('hidden');
-    if (wonPrizes.length === 0) {
-      summaryEl.innerHTML = `
-        <div class="summary-title">⏰ Hết giờ rồi!</div>
-        <div class="summary-empty">Lần này em chưa trúng gì cả... 🌙<br>Nhưng anh vẫn thương em nhiều lắm! 💕</div>`;
-    } else {
-      const rows = wonPrizes.map(p =>
-        `<div class="summary-item">${p.icon} <span>${p.name}</span></div>`
-      ).join('');
-      summaryEl.innerHTML = `
-        <div class="summary-title">🎁 Phần thưởng của em</div>
-        <div class="summary-list">${rows}</div>
-        <div class="summary-note">Anh sẽ lo hết nha! 💕</div>`;
-    }
+    // Hiện summary sau 600ms để billion lộ ra trước
+    setTimeout(() => {
+      summaryEl.classList.remove('hidden');
+      if (wonPrizes.length === 0) {
+        summaryEl.innerHTML = `
+          <div class="summary-title">⏰ Hết giờ rồi!</div>
+          <div class="summary-empty">Lần này em chưa trúng gì cả... 🌙<br>Nhưng anh vẫn thương em nhiều lắm! 💕</div>`;
+      } else {
+        const rows = wonPrizes.map(p =>
+          `<div class="summary-item">${p.icon} <span>${p.name}</span></div>`
+        ).join('');
+        summaryEl.innerHTML = `
+          <div class="summary-title">🎁 Phần thưởng của em</div>
+          <div class="summary-list">${rows}</div>
+          <div class="summary-note">Anh sẽ lo hết nha! 💕</div>`;
+      }
+    }, 600);
 
     hintText.textContent = '';
   }
