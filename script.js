@@ -56,7 +56,7 @@ function startEverything() {
   initParticles();
   initCountdown();
   initCake();
-  initGallery();
+  initLocket();
   initAudio();
   initScrollReveal();
 }
@@ -172,64 +172,129 @@ function initCake() {
   });
 }
 
-// ── PHOTO GALLERY ───────────────────────────────────
-function initGallery() {
-  const track = document.getElementById('gallery-track');
-  const dots  = document.getElementById('gallery-dots');
-  const prev  = document.getElementById('gallery-prev');
-  const next  = document.getElementById('gallery-next');
-  const images = CONFIG.galleryImages;
-  let current = 0;
+// ── LOCKET-STYLE GALLERY ────────────────────────────
+function initLocket() {
+  const images   = CONFIG.galleryImages;
+  const mainImg  = document.getElementById('locket-img-main');
+  const prevImg  = document.getElementById('locket-img-prev');
+  const nextImg  = document.getElementById('locket-img-next');
+  const caption  = document.getElementById('locket-caption');
+  const dateEl   = document.getElementById('locket-date');
+  const dotsEl   = document.getElementById('locket-dots');
+  const stage    = document.getElementById('locket-stage');
+  let current    = 0;
+  let animating  = false;
   let autoTimer;
 
-  // Build cards
-  images.forEach((img, i) => {
-    const card = document.createElement('div');
-    card.className = 'gallery-card';
-    card.innerHTML = `
-      <img src="${img.src}" alt="${img.caption}" onerror="this.src='https://placehold.co/480x320/f9a8d4/7e22ce?text=${encodeURIComponent(img.caption)}'">
-      <p class="card-caption">${img.caption}</p>
-      <p class="card-date">${img.date}</p>
-    `;
-    track.appendChild(card);
+  function placeholder(text) {
+    return `https://placehold.co/400x580/1a0828/f472b6?text=${encodeURIComponent(text)}`;
+  }
 
+  function imgSrc(i) {
+    const img = images[(i + images.length) % images.length];
+    return img ? img.src : '';
+  }
+
+  // Build dots
+  images.forEach((_, i) => {
     const dot = document.createElement('div');
-    dot.className = 'dot' + (i === 0 ? ' active' : '');
-    dot.addEventListener('click', () => goTo(i));
-    dots.appendChild(dot);
+    dot.className = 'locket-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i, i > current ? 'left' : 'right'));
+    dotsEl.appendChild(dot);
   });
 
-  function goTo(idx) {
-    current = (idx + images.length) % images.length;
-    track.style.transform = `translateX(-${current * 100}%)`;
-    document.querySelectorAll('.dot').forEach((d, i) => {
+  function updateDots() {
+    document.querySelectorAll('.locket-dot').forEach((d, i) => {
       d.classList.toggle('active', i === current);
     });
+  }
+
+  function setBackCards() {
+    const pi = (current - 1 + images.length) % images.length;
+    const ni = (current + 1) % images.length;
+    prevImg.src = images[pi].src;
+    prevImg.onerror = () => { prevImg.src = placeholder(images[pi].caption); };
+    nextImg.src = images[ni].src;
+    nextImg.onerror = () => { nextImg.src = placeholder(images[ni].caption); };
+  }
+
+  function render() {
+    const img = images[current];
+    mainImg.src = img.src;
+    mainImg.onerror = () => { mainImg.src = placeholder(img.caption); };
+    caption.textContent = img.caption;
+    dateEl.textContent  = img.date;
+    setBackCards();
+    updateDots();
+  }
+
+  function goTo(idx, direction = 'left') {
+    if (animating) return;
+    animating = true;
+    const next = (idx + images.length) % images.length;
+
+    // Clone current image for out-animation
+    const outImg = mainImg.cloneNode();
+    outImg.className = '';
+    document.getElementById('locket-widget').appendChild(outImg);
+
+    // Animate out old
+    outImg.classList.add(direction === 'left' ? 'slide-out-left' : 'slide-out-right');
+
+    // Set new image and animate in
+    current = next;
+    const newSrc = images[current].src;
+    mainImg.src = newSrc;
+    mainImg.onerror = () => { mainImg.src = placeholder(images[current].caption); };
+    mainImg.classList.add(direction === 'left' ? 'slide-in-right' : 'slide-in-left');
+
+    caption.textContent = images[current].caption;
+    dateEl.textContent  = images[current].date;
+    updateDots();
+
+    setTimeout(() => {
+      outImg.remove();
+      mainImg.classList.remove('slide-in-right', 'slide-in-left');
+      setBackCards();
+      animating = false;
+    }, 460);
+
     resetAuto();
   }
 
   function resetAuto() {
     clearInterval(autoTimer);
-    autoTimer = setInterval(() => goTo(current + 1), 5000);
+    autoTimer = setInterval(() => goTo(current + 1, 'left'), 4000);
   }
 
-  prev.addEventListener('click', () => goTo(current - 1));
-  next.addEventListener('click', () => goTo(current + 1));
+  document.getElementById('locket-prev').addEventListener('click', () => goTo(current - 1, 'right'));
+  document.getElementById('locket-next').addEventListener('click', () => goTo(current + 1, 'left'));
 
-  // Touch swipe
+  // Touch / drag swipe on stage
   let touchStartX = 0;
-  track.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-  track.addEventListener('touchend', e => {
+  stage.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+  stage.addEventListener('touchend',   e => {
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1);
+    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1, dx < 0 ? 'left' : 'right');
   });
+
+  // Mouse drag
+  let mouseStartX = 0, isDragging = false;
+  stage.addEventListener('mousedown', e => { mouseStartX = e.clientX; isDragging = true; });
+  stage.addEventListener('mouseup',   e => {
+    if (!isDragging) return; isDragging = false;
+    const dx = e.clientX - mouseStartX;
+    if (Math.abs(dx) > 40) goTo(dx < 0 ? current + 1 : current - 1, dx < 0 ? 'left' : 'right');
+  });
+  stage.addEventListener('mouseleave', () => { isDragging = false; });
 
   // Keyboard
   document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight') goTo(current + 1);
-    if (e.key === 'ArrowLeft')  goTo(current - 1);
+    if (e.key === 'ArrowRight') goTo(current + 1, 'left');
+    if (e.key === 'ArrowLeft')  goTo(current - 1, 'right');
   });
 
+  render();
   resetAuto();
 }
 

@@ -96,19 +96,45 @@
       </div>
     </section>
 
-    <!-- ===== PHOTO GALLERY ===== -->
+    <!-- ===== LOCKET GALLERY ===== -->
     <section class="section" id="section-gallery">
       <p class="section-eyebrow">Những khoảnh khắc</p>
       <h2 class="section-title">Của chúng mình 💕</h2>
-      <div class="gallery-wrapper">
-        <div class="gallery-track" id="gallery-track">
-          <!-- Cards injected by JS -->
+
+      <div class="locket-stage" id="locket-stage">
+        <!-- Back cards (depth) -->
+        <div class="locket-back locket-back-1" id="locket-back-1">
+          <img id="locket-img-prev" src="" alt="" />
         </div>
-        <div class="gallery-controls">
-          <button class="gallery-btn" id="gallery-prev">&#8592;</button>
-          <div class="gallery-dots" id="gallery-dots"></div>
-          <button class="gallery-btn" id="gallery-next">&#8594;</button>
+        <div class="locket-back locket-back-2" id="locket-back-2">
+          <img id="locket-img-next" src="" alt="" />
         </div>
+
+        <!-- Phone frame (front) -->
+        <div class="locket-frame">
+          <div class="phone-shell">
+            <div class="phone-status">
+              <span>9:41</span>
+              <span class="heart-indicator">♥</span>
+              <span>100%</span>
+            </div>
+            <div class="phone-screen">
+              <div class="locket-widget" id="locket-widget">
+                <img id="locket-img-main" src="" alt="" />
+              </div>
+              <div class="locket-caption-bar">
+                <p class="cap-text" id="locket-caption"></p>
+                <p class="cap-date" id="locket-date"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="locket-dots" id="locket-dots"></div>
+      <div class="locket-arrows">
+        <button class="locket-arrow" id="locket-prev">&#8592;</button>
+        <button class="locket-arrow" id="locket-next">&#8594;</button>
       </div>
     </section>
 
