@@ -56,9 +56,9 @@ function startEverything() {
   initParticles();
   initCountdown();
   initCake();
-  initLocket();
   initAudio();
   initScrollReveal();
+  initGacha();
 }
 
 // ── FLOATING PARTICLES ──────────────────────────────
@@ -195,17 +195,18 @@ function initCake() {
 
 // ── REVEAL SECTIONS SAU KHI THỔI NẾN ───────────────
 function revealSections() {
-  const ids = ['section-gallery', 'section-message', 'site-footer'];
+  const ids = ['section-gallery', 'section-message', 'gacha-btn-wrap', 'site-footer'];
   ids.forEach((id, i) => {
     const el = document.getElementById(id);
     if (!el) return;
     setTimeout(() => {
       el.classList.add('revealed');
-      // Kích hoạt scroll reveal cho các section này
       el.classList.remove('reveal');
       el.classList.add('visible');
     }, i * 300);
   });
+  // Khởi tạo locket sau khi section hiện
+  setTimeout(() => initLocket(), 100);
 }
 
 // ── LOCKET-STYLE GALLERY ────────────────────────────
@@ -374,6 +375,247 @@ function initScrollReveal() {
   }, { threshold: 0.1 });
 
   sections.forEach(s => observer.observe(s));
+}
+
+// ── GACHA MINI-GAME ──────────────────────────────────
+function initGacha() {
+  // ── Reward pool ─────────────────────────────────
+  // weight: tỉ lệ tương đối. Được normalize khi roll.
+  const REWARDS = [
+    {
+      id: 'money_3030',
+      tier: 1,
+      icon: '💵',
+      name: '3.030 VNĐ',
+      weight: 99,       // 99% (tier 1)
+    },
+    {
+      id: 'face_wash',
+      tier: 2,
+      icon: '🫧',
+      name: 'Bộ máy rửa mặt',
+      img: 'photos/reward-facewash.jpg',  // bạn thêm ảnh sau
+      weight: 35,       // ~35% (tier 2) — tỉ lệ bạn điều chỉnh ở đây
+    },
+    {
+      id: 'miss',
+      tier: 'miss',
+      icon: '🌙',
+      name: 'Chúc em ngủ ngon~',
+      weight: 40,       // miss
+    },
+    {
+      id: 'billion',
+      tier: 3,
+      icon: '💰',
+      name: '5.000.000.000 VNĐ',
+      weight: 0.001,    // gần như không bao giờ
+    },
+  ];
+
+  const TOTAL_CARDS  = 9;
+  const MAX_TURNS    = 3;
+  const TIMER_SECS   = 30;
+  const CIRCUMFERENCE = 2 * Math.PI * 34; // 213.6
+
+  let turnsLeft  = MAX_TURNS;
+  let timerSec   = TIMER_SECS;
+  let timerInterval = null;
+  let gameOver   = false;
+  let cardRewards = []; // reward được assign cho mỗi thẻ
+
+  // ── DOM refs ────────────────────────────────────
+  const overlay      = document.getElementById('gacha-overlay');
+  const btnOpen      = document.getElementById('btn-open-gacha');
+  const btnClose     = document.getElementById('gacha-close');
+  const grid         = document.getElementById('gacha-grid');
+  const turnsEl      = document.getElementById('gacha-turns-left');
+  const timerNumEl   = document.getElementById('gacha-timer-num');
+  const ringFill     = document.getElementById('ring-fill');
+  const resultBox    = document.getElementById('gacha-result');
+  const resultInner  = document.getElementById('gacha-result-inner');
+  const hintText     = document.getElementById('gacha-hint-text');
+
+  // ── Helpers ─────────────────────────────────────
+  function roll() {
+    const total = REWARDS.reduce((s, r) => s + r.weight, 0);
+    let rand = Math.random() * total;
+    for (const r of REWARDS) {
+      rand -= r.weight;
+      if (rand <= 0) return r;
+    }
+    return REWARDS[0];
+  }
+
+  function buildCards() {
+    grid.innerHTML = '';
+    cardRewards = [];
+
+    // Assign rewards — guarantee tier-1 shows ≥1 times to keep promise
+    for (let i = 0; i < TOTAL_CARDS; i++) {
+      cardRewards.push(roll());
+    }
+
+    cardRewards.forEach((reward, i) => {
+      const card = document.createElement('div');
+      card.className = 'g-card';
+      card.dataset.index = i;
+      card.style.setProperty('--i', i);
+
+      const inner = document.createElement('div');
+      inner.className = 'g-card-inner';
+
+      // Front
+      const front = document.createElement('div');
+      front.className = 'g-card-front';
+      front.innerHTML = `
+        <span class="card-deco">✨</span>
+        <span class="card-num">${String(i + 1).padStart(2,'0')}</span>
+      `;
+
+      // Back
+      const back = document.createElement('div');
+      back.className = `g-card-back tier-${reward.tier}`;
+
+      if (reward.tier === 'miss') {
+        back.innerHTML = `
+          <span class="reward-icon">${reward.icon}</span>
+          <span class="reward-name">${reward.name}</span>
+        `;
+      } else if (reward.img) {
+        back.innerHTML = `
+          <img class="reward-img"
+               src="${reward.img}"
+               onerror="this.style.display='none';this.previousSibling && (this.previousSibling.style.display='block')"
+               alt="${reward.name}" />
+          <span class="reward-icon" style="display:none">${reward.icon}</span>
+          <span class="reward-name">${reward.name}</span>
+        `;
+      } else {
+        back.innerHTML = `
+          <span class="reward-icon">${reward.icon}</span>
+          <span class="reward-name">${reward.name}</span>
+        `;
+      }
+
+      inner.appendChild(front);
+      inner.appendChild(back);
+      card.appendChild(inner);
+
+      card.addEventListener('click', () => onCardClick(card, i));
+      grid.appendChild(card);
+    });
+  }
+
+  function onCardClick(card, idx) {
+    if (gameOver || card.classList.contains('flipped') || turnsLeft <= 0) return;
+
+    card.classList.add('flipped', 'used');
+    turnsLeft--;
+    turnsEl.textContent = turnsLeft;
+
+    const reward = cardRewards[idx];
+    showResult(reward);
+
+    if (turnsLeft <= 0) {
+      setTimeout(() => endGame(), 800);
+    }
+  }
+
+  function showResult(reward) {
+    resultBox.classList.remove('hidden');
+    hideResultTimeout = setTimeout(() => resultBox.classList.add('hidden'), 2200);
+
+    if (reward.tier === 'miss') {
+      resultInner.innerHTML = `
+        <div class="result-icon">🌙</div>
+        <div class="result-title">Lần này chưa trúng</div>
+        <div class="result-miss">${reward.name}</div>
+        <div class="result-close-hint">tự tắt sau 2s</div>
+      `;
+    } else {
+      const prizeClass = reward.tier === 3 ? 'gold' : '';
+      resultInner.innerHTML = `
+        <div class="result-icon">${reward.icon}</div>
+        <div class="result-title">🎉 Chúc mừng!</div>
+        <div class="result-prize ${prizeClass}">${reward.name}</div>
+        <div class="result-close-hint">tự tắt sau 2s</div>
+      `;
+      launchConfetti(reward.tier === 3 ? 150 : 60);
+    }
+  }
+
+  let hideResultTimeout = null;
+
+  function endGame() {
+    gameOver = true;
+    stopTimer();
+
+    // Lật hết các thẻ còn lại
+    document.querySelectorAll('.g-card:not(.flipped)').forEach(c => {
+      c.classList.add('flipped', 'used');
+    });
+
+    resultBox.classList.add('hidden');
+    hintText.textContent = 'Hết lượt rồi! Hy vọng em thích quà nhé 🎁';
+  }
+
+  // ── Timer ────────────────────────────────────────
+  function startTimer() {
+    timerSec   = TIMER_SECS;
+    timerNumEl.textContent = timerSec;
+    ringFill.style.strokeDashoffset = 0;
+    timerNumEl.classList.remove('urgent');
+    ringFill.classList.remove('urgent');
+
+    timerInterval = setInterval(() => {
+      timerSec--;
+      timerNumEl.textContent = timerSec;
+
+      const progress = (TIMER_SECS - timerSec) / TIMER_SECS;
+      ringFill.style.strokeDashoffset = CIRCUMFERENCE * progress;
+
+      if (timerSec <= 10) {
+        timerNumEl.classList.add('urgent');
+        ringFill.classList.add('urgent');
+      }
+
+      if (timerSec <= 0) endGame();
+    }, 1000);
+  }
+
+  function stopTimer() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+
+  // ── Open / Close ────────────────────────────────
+  function openModal() {
+    // Reset state
+    turnsLeft = MAX_TURNS;
+    gameOver  = false;
+    turnsEl.textContent = turnsLeft;
+    resultBox.classList.add('hidden');
+    hintText.textContent = 'Chọn một thẻ bất kỳ để lật ✨';
+
+    buildCards();
+    overlay.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    startTimer();
+  }
+
+  function closeModal() {
+    overlay.classList.add('hidden');
+    document.body.style.overflow = '';
+    stopTimer();
+    clearTimeout(hideResultTimeout);
+  }
+
+  btnOpen.addEventListener('click', openModal);
+  btnClose.addEventListener('click', closeModal);
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) closeModal();
+  });
 }
 
 // ── CONFETTI ─────────────────────────────────────────

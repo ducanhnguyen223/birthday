@@ -117,7 +117,7 @@
     <!-- ===== LOCKET GALLERY ===== -->
     <section class="section section-hidden" id="section-gallery">
       <p class="section-eyebrow">Những khoảnh khắc</p>
-      <h2 class="section-title">Của chúng mình 💕</h2>
+      <h2 class="section-title">💕</h2>
 
       <div class="locket-stage" id="locket-stage">
         <!-- Back cards (depth) -->
@@ -133,7 +133,6 @@
           <div class="phone-shell">
             <div class="phone-status">
               <span>9:41</span>
-              <span class="heart-indicator">♥</span>
               <span>100%</span>
             </div>
             <div class="phone-screen">
@@ -171,9 +170,54 @@
       </div>
     </section>
 
+    <!-- ===== GACHA BUTTON ===== -->
+    <div class="gacha-btn-wrap section-hidden" id="gacha-btn-wrap">
+      <button class="btn-gacha" id="btn-open-gacha">
+        <span class="gacha-btn-icon">🎁</span>
+        <span>Nhận quà sinh nhật</span>
+      </button>
+      <p class="gacha-btn-hint">Bốc thăm may mắn đang chờ em...</p>
+    </div>
+
     <footer class="footer section-hidden" id="site-footer">
       <p>Made with ❤️ · Happy Birthday Thùy Linh 2026</p>
     </footer>
+
+    <!-- ===== GACHA MODAL ===== -->
+    <div id="gacha-overlay" class="gacha-overlay hidden">
+      <div class="gacha-modal">
+        <button class="gacha-close" id="gacha-close">&#10005;</button>
+
+        <!-- Header -->
+        <div class="gacha-header">
+          <p class="gacha-eyebrow">🎁 Mini Game</p>
+          <h2 class="gacha-title">Bốc thăm may mắn</h2>
+          <p class="gacha-sub">Lật thẻ để nhận quà — <strong id="gacha-turns-left">3</strong> lượt còn lại</p>
+        </div>
+
+        <!-- Countdown ring -->
+        <div class="gacha-timer-wrap">
+          <svg class="gacha-ring" viewBox="0 0 80 80">
+            <circle class="ring-bg" cx="40" cy="40" r="34"/>
+            <circle class="ring-fill" id="ring-fill" cx="40" cy="40" r="34"/>
+          </svg>
+          <span class="gacha-timer-num" id="gacha-timer-num">30</span>
+        </div>
+
+        <!-- Card grid 3×3 -->
+        <div class="gacha-grid" id="gacha-grid">
+          <!-- 9 cards injected by JS -->
+        </div>
+
+        <!-- Result popup (inside modal) -->
+        <div class="gacha-result hidden" id="gacha-result">
+          <div class="gacha-result-inner" id="gacha-result-inner"></div>
+        </div>
+
+        <!-- Footer hint -->
+        <p class="gacha-hint" id="gacha-hint-text">Chọn một thẻ bất kỳ để lật ✨</p>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
