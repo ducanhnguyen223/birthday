@@ -37,6 +37,9 @@
     <audio id="bg-music" loop>
       <source src="audio/birthday.mp3" type="audio/mpeg" />
     </audio>
+    <audio id="cheer-sound">
+      <source src="audio/cheer.mp3" type="audio/mpeg" />
+    </audio>
 
     <!-- ===== COUNTDOWN ===== -->
     <section class="section" id="section-countdown">
@@ -78,6 +81,18 @@
       <p class="section-eyebrow">Thổi nến đi nào</p>
       <h2 class="section-title">Ước điều gì đó nhé...</h2>
       <div class="cake-wrapper">
+        <!-- Wish input — hiện trước khi thổi -->
+        <div class="wish-input-wrap" id="wish-input-wrap">
+          <input
+            type="text"
+            id="wish-input"
+            class="wish-input"
+            maxlength="80"
+            placeholder="Nhập điều ước của em..."
+            autocomplete="off"
+          />
+        </div>
+
         <div class="cake" id="cake">
           <!-- Candles -->
           <div class="candles" id="candles">
@@ -92,12 +107,15 @@
           <div class="cake-plate"></div>
         </div>
         <p class="cake-hint" id="cake-hint">Click vào nến để thổi 🕯️</p>
-        <p class="cake-wish hidden" id="cake-wish">✨ Ước nguyện đã được gửi đi... ✨</p>
+        <div class="cake-wish hidden" id="cake-wish">
+          <p class="wish-sent">✨ Ước nguyện đã được gửi đi... ✨</p>
+          <p class="wish-display" id="wish-display"></p>
+        </div>
       </div>
     </section>
 
     <!-- ===== LOCKET GALLERY ===== -->
-    <section class="section" id="section-gallery">
+    <section class="section section-hidden" id="section-gallery">
       <p class="section-eyebrow">Những khoảnh khắc</p>
       <h2 class="section-title">Của chúng mình 💕</h2>
 
@@ -139,7 +157,7 @@
     </section>
 
     <!-- ===== LOVE MESSAGE ===== -->
-    <section class="section" id="section-message">
+    <section class="section section-hidden" id="section-message">
       <p class="section-eyebrow">Gửi đến em</p>
       <h2 class="section-title">Lá thư nhỏ 💌</h2>
       <div class="letter-wrapper">
@@ -153,7 +171,7 @@
       </div>
     </section>
 
-    <footer class="footer">
+    <footer class="footer section-hidden" id="site-footer">
       <p>Made with ❤️ · Happy Birthday Thùy Linh 2026</p>
     </footer>
   </div>

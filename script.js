@@ -142,9 +142,14 @@ function initCountdown() {
 
 // ── CAKE & CANDLES ──────────────────────────────────
 function initCake() {
-  const flames  = Array.from(document.querySelectorAll('.flame'));
-  const hint    = document.getElementById('cake-hint');
-  const wish    = document.getElementById('cake-wish');
+  const flames       = Array.from(document.querySelectorAll('.flame'));
+  const hint         = document.getElementById('cake-hint');
+  const wishWrap     = document.getElementById('cake-wish');
+  const wishSent     = wishWrap.querySelector('.wish-sent');
+  const wishDisplay  = document.getElementById('wish-display');
+  const wishInput    = document.getElementById('wish-input');
+  const wishInputWrap = document.getElementById('wish-input-wrap');
+  const cheerSound   = document.getElementById('cheer-sound');
   let blown = 0;
   let allOut = false;
 
@@ -155,20 +160,51 @@ function initCake() {
 
     if (blown === flames.length && !allOut) {
       allOut = true;
+
+      // Ẩn hint + input
       hint.classList.add('hidden');
-      wish.classList.remove('hidden');
-      launchConfetti(80);
+      wishInputWrap.classList.add('hidden');
+
+      // Hiện wish confirmed
+      const typed = wishInput.value.trim();
+      wishDisplay.textContent = typed ? `"${typed}"` : '';
+      wishWrap.classList.remove('hidden');
+
+      // Âm thanh hò reo
+      if (cheerSound.readyState >= 1) {
+        cheerSound.currentTime = 0;
+        cheerSound.play().catch(() => {});
+      }
+
+      // Confetti
+      launchConfetti(100);
+
+      // Reveal gallery + letter sau 1.2s
+      setTimeout(() => revealSections(), 1200);
     }
   }
 
-  // Click on each candle
   document.querySelectorAll('.candle').forEach((candle, i) => {
     candle.addEventListener('click', () => blowCandle(flames[i]));
   });
 
-  // Also click on the whole cake = blow all
   document.getElementById('cake').addEventListener('click', () => {
     flames.forEach(f => blowCandle(f));
+  });
+}
+
+// ── REVEAL SECTIONS SAU KHI THỔI NẾN ───────────────
+function revealSections() {
+  const ids = ['section-gallery', 'section-message', 'site-footer'];
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    setTimeout(() => {
+      el.classList.add('revealed');
+      // Kích hoạt scroll reveal cho các section này
+      el.classList.remove('reveal');
+      el.classList.add('visible');
+    }, i * 300);
   });
 }
 
@@ -327,14 +363,13 @@ function initAudio() {
 
 // ── SCROLL REVEAL ────────────────────────────────────
 function initScrollReveal() {
-  const sections = document.querySelectorAll('.section');
+  // Chỉ apply cho countdown + cake, không phải gallery/letter (unlock sau khi thổi nến)
+  const sections = document.querySelectorAll('.section:not(.section-hidden)');
   sections.forEach(s => s.classList.add('reveal'));
 
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-      }
+      if (entry.isIntersecting) entry.target.classList.add('visible');
     });
   }, { threshold: 0.1 });
 
