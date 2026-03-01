@@ -387,14 +387,15 @@ function initGacha() {
     billion:{ id: 'billion',    tier: 3, icon: '💰', name: '5.000.000.000 VNĐ' },
   };
 
-  // Board cố định: 4× money (2 cặp), 2× wash (1 cặp), 1× billion (lẻ - không thể match), 5× miss
-  // Cuối game lật hết → billion lộ ra nhưng không có cặp → tuyệt vọng
+  // Board cố định: 4× money (2 cặp), 2× wash (1 cặp), 2× billion (trông hợp lệ nhưng luôn trượt), 4× miss
+  // Billion: khi lật thẻ 1 → cho thấy 1.5s rồi tự úp lại (không thể pending)
+  // Nếu lật 2 billion liên tiếp → "khớp" giả, rồi flip úp lại sau 1.5s với hint tuyệt vọng
   const BOARD_TEMPLATE = [
     R.money, R.money,
     R.money, R.money,
     R.wash,  R.wash,
-    R.billion,
-    R.miss,  R.miss, R.miss, R.miss, R.miss,
+    R.billion, R.billion,
+    R.miss,  R.miss, R.miss, R.miss,
   ];
 
   const TIMER_SECS    = 30;
@@ -481,10 +482,22 @@ function initGacha() {
     if (gameOver || lockBoard) return;
     if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
 
+    const reward = cardRewards[idx];
     card.classList.add('flipped');
 
     if (pendingCard === null) {
-      // Lật thẻ đầu tiên → chờ thẻ thứ 2
+      // Lật thẻ đầu tiên
+      if (reward.id === 'billion') {
+        // Billion làm thẻ 1 → cho xem rồi tự úp lại, không set pending
+        hintText.textContent = '💸 5 tỷ... nhưng cần tìm thẻ cặp!';
+        lockBoard = true;
+        setTimeout(() => {
+          card.classList.remove('flipped');
+          lockBoard = false;
+          hintText.textContent = 'Lật 2 thẻ giống nhau để trúng thưởng ✨';
+        }, 1500);
+        return;
+      }
       pendingCard = card;
       pendingIdx  = idx;
       hintText.textContent = 'Chọn thẻ thứ 2 để so sánh...';
@@ -493,16 +506,28 @@ function initGacha() {
 
     // Lật thẻ thứ 2 → so sánh
     lockBoard = true;
-    const firstCard  = pendingCard;
-    const firstIdx   = pendingIdx;
+    const firstCard = pendingCard;
+    const firstIdx  = pendingIdx;
     pendingCard = null;
     pendingIdx  = null;
 
     const r1 = cardRewards[firstIdx];
-    const r2 = cardRewards[idx];
+    const r2 = reward;
+
+    // Cả 2 đều billion → "fake match" rồi slip away
+    if (r1.id === 'billion' && r2.id === 'billion') {
+      hintText.textContent = '😱 5 tỷ... 5 tỷ... ĐỢI ĐÃ—';
+      setTimeout(() => {
+        firstCard.classList.remove('flipped');
+        card.classList.remove('flipped');
+        lockBoard = false;
+        hintText.textContent = '💔 Ôi không... tuột mất rồi~ Tìm cặp khác đi em!';
+      }, 1800);
+      return;
+    }
 
     if (r1.id === r2.id && r1.tier !== 'miss') {
-      // ✅ Match!
+      // ✅ Match thật
       setTimeout(() => {
         firstCard.classList.add('matched');
         card.classList.add('matched');
@@ -510,8 +535,6 @@ function initGacha() {
         wonPrizes.push(r1);
         showMatchResult(r1);
         hintText.textContent = 'Lật thêm thẻ để tìm cặp khác ✨';
-
-        // Kiểm tra còn thẻ có thể match không
         if (allPairsFound()) setTimeout(() => endGame(), 800);
       }, 600);
     } else {
@@ -520,18 +543,17 @@ function initGacha() {
         firstCard.classList.remove('flipped');
         card.classList.remove('flipped');
         lockBoard = false;
-        hintText.textContent = r2.tier === 3
-          ? '💸 5 tỷ... tiếc quá nhỉ~ Tìm cặp khác đi em!'
+        hintText.textContent = r2.id === 'billion' || r1.id === 'billion'
+          ? '💸 5 tỷ kia rồi... nhưng không có cặp~ Tiếc ghê!'
           : 'Chưa khớp, thử lại nào ✨';
       }, 1000);
     }
   }
 
   function allPairsFound() {
-    // Còn thẻ chưa flipped/matched và không phải billion/miss → còn cặp
     const unmatched = cardRewards.filter((r, i) => {
       const card = grid.children[i];
-      return !card.classList.contains('matched') && r.tier !== 'miss' && r.tier !== 3;
+      return !card.classList.contains('matched') && r.tier !== 'miss' && r.id !== 'billion';
     });
     return unmatched.length === 0;
   }
