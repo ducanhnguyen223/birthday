@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday Thùy Linh 🎂</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ===== INTRO SCREEN ===== -->
+  <div id="intro-screen">
+    <div class="intro-particles" id="intro-particles"></div>
+    <div class="intro-content">
+      <p class="intro-sub">Dành tặng</p>
+      <h1 class="intro-name">Nguyễn Thùy Linh</h1>
+      <p class="intro-date">03 · 03 · 2026</p>
+      <button class="btn-enter" id="btn-enter">
+        <span>Mở quà</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div id="main-content" class="hidden">
+    <div class="particles" id="particles"></div>
+
+    <!-- Audio -->
+    <button class="audio-btn" id="audio-btn" title="Nhạc nền">
+      <svg id="icon-play" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
+      <svg id="icon-mute" viewBox="0 0 24 24" fill="currentColor" class="hidden"><path d="M16.5 12A4.5 4.5 0 0 0 14 7.97v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/></svg>
+    </button>
+    <audio id="bg-music" loop>
+      <source src="audio/birthday.mp3" type="audio/mpeg" />
+    </audio>
+
+    <!-- ===== COUNTDOWN ===== -->
+    <section class="section" id="section-countdown">
+      <div class="countdown-wrapper">
+        <p class="section-eyebrow">Chỉ còn</p>
+        <div class="countdown-grid" id="countdown-grid">
+          <div class="countdown-item">
+            <span class="countdown-num" id="cd-days">00</span>
+            <span class="countdown-label">Ngày</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-item">
+            <span class="countdown-num" id="cd-hours">00</span>
+            <span class="countdown-label">Giờ</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-item">
+            <span class="countdown-num" id="cd-mins">00</span>
+            <span class="countdown-label">Phút</span>
+          </div>
+          <div class="countdown-sep">:</div>
+          <div class="countdown-item">
+            <span class="countdown-num" id="cd-secs">00</span>
+            <span class="countdown-label">Giây</span>
+          </div>
+        </div>
+        <p class="countdown-until">đến sinh nhật của <em>Thùy Linh</em> 🎂</p>
+
+        <!-- Shown on birthday -->
+        <div class="birthday-msg hidden" id="birthday-msg">
+          <h2>🎉 Happy Birthday Thùy Linh! 🎉</h2>
+          <p>Chúc em một ngày thật hạnh phúc &amp; tràn đầy yêu thương 💕</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CAKE ===== -->
+    <section class="section" id="section-cake">
+      <p class="section-eyebrow">Thổi nến đi nào</p>
+      <h2 class="section-title">Ước điều gì đó nhé...</h2>
+      <div class="cake-wrapper">
+        <div class="cake" id="cake">
+          <!-- Candles -->
+          <div class="candles" id="candles">
+            <div class="candle" data-index="0"><div class="flame" id="f0"></div></div>
+            <div class="candle" data-index="1"><div class="flame" id="f1"></div></div>
+            <div class="candle" data-index="2"><div class="flame" id="f2"></div></div>
+          </div>
+          <!-- Cake layers -->
+          <div class="cake-top"></div>
+          <div class="cake-middle"></div>
+          <div class="cake-bottom"></div>
+          <div class="cake-plate"></div>
+        </div>
+        <p class="cake-hint" id="cake-hint">Click vào nến để thổi 🕯️</p>
+        <p class="cake-wish hidden" id="cake-wish">✨ Ước nguyện đã được gửi đi... ✨</p>
+      </div>
+    </section>
+
+    <!-- ===== PHOTO GALLERY ===== -->
+    <section class="section" id="section-gallery">
+      <p class="section-eyebrow">Những khoảnh khắc</p>
+      <h2 class="section-title">Của chúng mình 💕</h2>
+      <div class="gallery-wrapper">
+        <div class="gallery-track" id="gallery-track">
+          <!-- Cards injected by JS -->
+        </div>
+        <div class="gallery-controls">
+          <button class="gallery-btn" id="gallery-prev">&#8592;</button>
+          <div class="gallery-dots" id="gallery-dots"></div>
+          <button class="gallery-btn" id="gallery-next">&#8594;</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== LOVE MESSAGE ===== -->
+    <section class="section" id="section-message">
+      <p class="section-eyebrow">Gửi đến em</p>
+      <h2 class="section-title">Lá thư nhỏ 💌</h2>
+      <div class="letter-wrapper">
+        <div class="letter">
+          <p class="letter-salute">Thùy Linh yêu,</p>
+          <p>Mỗi ngày có em là mỗi ngày thêm ý nghĩa. Sinh nhật này, anh chỉ muốn nói rằng — em là điều tuyệt vời nhất đã xảy ra trong cuộc đời anh.</p>
+          <p>Chúc em một tuổi mới tràn đầy niềm vui, sức khỏe, và luôn rạng rỡ như nụ cười mà em hay dành cho anh.</p>
+          <p>Yêu em rất nhiều 💕</p>
+          <p class="letter-sign">— Anh Đức</p>
+        </div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Made with ❤️ · Happy Birthday Thùy Linh 2026</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

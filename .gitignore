@@ -1,0 +1,10 @@
+# knowns (ignore all except docs)
+.knowns/*
+!.knowns/docs/
+!.knowns/docs/**
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
