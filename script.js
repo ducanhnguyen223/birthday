@@ -490,13 +490,20 @@ function initGacha() {
     if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
 
     const reward = cardRewards[idx];
-
-    // Billion không thể lật trong lúc chơi
-    if (reward.id === 'billion') return;
-
     card.classList.add('flipped');
 
     if (pendingCard === null) {
+      if (reward.id === 'billion') {
+        // Billion làm thẻ 1: cho thấy rồi tự úp lại, tạo hi vọng
+        hintText.textContent = '💰 5 TỶ!! Nhanh tìm thẻ cặp đi em!!';
+        lockBoard = true;
+        setTimeout(() => {
+          card.classList.remove('flipped');
+          lockBoard = false;
+          hintText.textContent = '...thẻ cặp ở đâu nhỉ? Tìm nhanh lên! ⏰';
+        }, 1600);
+        return;
+      }
       pendingCard = card;
       pendingIdx  = idx;
       hintText.textContent = 'Chọn thẻ thứ 2 để so sánh...';
@@ -512,6 +519,20 @@ function initGacha() {
 
     const r1 = cardRewards[firstIdx];
     const r2 = reward;
+
+    // Thẻ 1 bình thường + thẻ 2 là billion → billion tự úp lại, giữ thẻ 1 pending
+    if (r2.id === 'billion') {
+      hintText.textContent = '💰 5 TỶ!! Nhưng... không phải cặp với thẻ này!';
+      setTimeout(() => {
+        card.classList.remove('flipped');
+        // Trả thẻ 1 về pending để người chơi tiếp tục
+        pendingCard = firstCard;
+        pendingIdx  = firstIdx;
+        lockBoard = false;
+        hintText.textContent = 'Thẻ kia vẫn đang chờ~ Tìm cặp cho nó đi! ✨';
+      }, 1400);
+      return;
+    }
 
     if (r1.id === r2.id && r1.tier !== 'miss') {
       // ✅ Match thật
