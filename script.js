@@ -381,20 +381,21 @@ function initScrollReveal() {
 function initGacha() {
   // ── Reward definitions ──────────────────────────
   const R = {
-    money:  { id: 'money_3030', tier: 1, icon: '💵', name: '3.030 VNĐ' },
-    wash:   { id: 'face_wash',  tier: 2, icon: '🫧', name: 'Máy rửa mặt', img: 'photos/reward-facewash.jpg' },
-    miss:   { id: 'miss',       tier: 'miss', icon: '🌙', name: 'Chúc em ngủ ngon~' },
-    billion:{ id: 'billion',    tier: 3, icon: '💰', name: '5.000.000.000 VNĐ' },
+    money:        { id: 'money_3030',    tier: 1,      icon: '💵', name: '3.030 VNĐ' },
+    wash:         { id: 'face_wash',     tier: 2,      icon: '🫧', name: 'Máy rửa mặt', img: 'photos/reward-facewash.jpg' },
+    miss:         { id: 'miss',          tier: 'miss', icon: '🌙', name: 'Chúc em ngủ ngon~' },
+    billion:      { id: 'billion',       tier: 3,      icon: '💰', name: '5.000.000.000 VNĐ' },
+    // Thẻ trá hình: trông như miss khi lật, nhưng cuối game lộ ra là 5 tỷ
+    billion_fake: { id: 'miss',          tier: 'miss', icon: '🌙', name: 'Chúc em ngủ ngon~', disguised: true },
   };
 
-  // Board cố định: 4× money (2 cặp), 2× wash (1 cặp), 2× billion (trông hợp lệ nhưng luôn trượt), 4× miss
-  // Billion: khi lật thẻ 1 → cho thấy 1.5s rồi tự úp lại (không thể pending)
-  // Nếu lật 2 billion liên tiếp → "khớp" giả, rồi flip úp lại sau 1.5s với hint tuyệt vọng
+  // Board: 4× money (2 cặp), 2× wash (1 cặp), 1× billion thật, 1× billion_fake (trá hình miss), 4× miss
   const BOARD_TEMPLATE = [
     R.money, R.money,
     R.money, R.money,
     R.wash,  R.wash,
-    R.billion, R.billion,
+    R.billion,
+    R.billion_fake,
     R.miss,  R.miss, R.miss, R.miss,
   ];
 
@@ -405,11 +406,12 @@ function initGacha() {
   let timerInterval = null;
   let gameOver      = false;
   let cardRewards   = [];
-  let pendingCard   = null;   // thẻ đầu tiên đang chờ so sánh
+  let pendingCard   = null;
   let pendingIdx    = null;
-  let lockBoard     = false;  // ngăn click trong lúc animate
-  let wonPrizes     = [];     // danh sách phần thưởng đã match được
+  let lockBoard     = false;
+  let wonPrizes     = [];
   let hideResultTimeout = null;
+  let disguisedCardEl = null; // ref đến thẻ billion_fake
 
   // ── DOM refs ────────────────────────────────────
   const overlay    = document.getElementById('gacha-overlay');
@@ -455,6 +457,7 @@ function initGacha() {
   function buildCards() {
     grid.innerHTML = '';
     cardRewards = shuffle(BOARD_TEMPLATE);
+    disguisedCardEl = null;
 
     cardRewards.forEach((reward, i) => {
       const card  = document.createElement('div');
@@ -470,8 +473,12 @@ function initGacha() {
       front.innerHTML = `<span class="card-deco">✨</span><span class="card-num">${String(i+1).padStart(2,'0')}</span>`;
 
       inner.appendChild(front);
+      // Render back dựa theo reward thật (fake trông như miss)
       inner.appendChild(makeCardBack(reward));
       card.appendChild(inner);
+
+      if (reward.disguised) disguisedCardEl = card;
+
       card.addEventListener('click', () => onCardClick(card, i));
       grid.appendChild(card);
     });
@@ -558,15 +565,24 @@ function initGacha() {
     clearTimeout(hideResultTimeout);
     resultBox.classList.add('hidden');
 
+    // Swap back của thẻ trá hình → lộ billion thật trước khi lật
+    if (disguisedCardEl) {
+      const inner = disguisedCardEl.querySelector('.g-card-inner');
+      const oldBack = inner.querySelector('.g-card-back');
+      if (oldBack) oldBack.remove();
+      inner.appendChild(makeCardBack(R.billion));
+    }
+
     // Lật hết thẻ còn lại (kể cả thẻ pending chưa so sánh)
     Array.from(grid.children).forEach((c, i) => {
       if (!c.classList.contains('flipped') && !c.classList.contains('matched')) {
         c.classList.add('flipped', 'dimmed');
       } else if (c.classList.contains('flipped') && !c.classList.contains('matched')) {
-        c.classList.add('dimmed'); // thẻ pending
+        c.classList.add('dimmed');
       }
-      // Billion: bỏ dimmed, thêm highlight để nổi bật
-      if (cardRewards[i] && cardRewards[i].id === 'billion') {
+      // Billion thật + thẻ trá hình vừa swap → nổi bật vàng
+      const r = cardRewards[i];
+      if (r && (r.id === 'billion' || r.disguised)) {
         c.classList.remove('dimmed');
         c.classList.add('billion-taunt');
       }
