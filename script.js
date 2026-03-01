@@ -379,85 +379,83 @@ function initScrollReveal() {
 
 // ── GACHA MINI-GAME ──────────────────────────────────
 function initGacha() {
-  // ── Reward pool ─────────────────────────────────
-  // weight: tỉ lệ tương đối. Được normalize khi roll.
-  const REWARDS = [
-    {
-      id: 'money_3030',
-      tier: 1,
-      icon: '💵',
-      name: '3.030 VNĐ',
-      weight: 99,       // 99% (tier 1)
-    },
-    {
-      id: 'face_wash',
-      tier: 2,
-      icon: '🫧',
-      name: 'Bộ máy rửa mặt',
-      img: 'photos/reward-facewash.jpg',  // bạn thêm ảnh sau
-      weight: 35,       // ~35% (tier 2) — tỉ lệ bạn điều chỉnh ở đây
-    },
-    {
-      id: 'miss',
-      tier: 'miss',
-      icon: '🌙',
-      name: 'Chúc em ngủ ngon~',
-      weight: 40,       // miss
-    },
-    {
-      id: 'billion',
-      tier: 3,
-      icon: '💰',
-      name: '5.000.000.000 VNĐ',
-      weight: 0.001,    // gần như không bao giờ
-    },
+  // ── Reward definitions ──────────────────────────
+  const R = {
+    money:  { id: 'money_3030', tier: 1, icon: '💵', name: '3.030 VNĐ' },
+    wash:   { id: 'face_wash',  tier: 2, icon: '🫧', name: 'Máy rửa mặt', img: 'photos/reward-facewash.jpg' },
+    miss:   { id: 'miss',       tier: 'miss', icon: '🌙', name: 'Chúc em ngủ ngon~' },
+    billion:{ id: 'billion',    tier: 3, icon: '💰', name: '5.000.000.000 VNĐ' },
+  };
+
+  // Board cố định: 2× money, 2× wash, 1× billion, 4× miss
+  // Guaranteed: money pair match được, wash pair match được, billion chỉ 1 thẻ → không thể match
+  const BOARD_TEMPLATE = [
+    R.money, R.money,
+    R.wash,  R.wash,
+    R.billion,
+    R.miss,  R.miss, R.miss, R.miss,
   ];
 
-  const TOTAL_CARDS  = 9;
-  const MAX_TURNS    = 3;
-  const TIMER_SECS   = 30;
-  const CIRCUMFERENCE = 2 * Math.PI * 34; // 213.6
+  const TIMER_SECS    = 30;
+  const CIRCUMFERENCE = 2 * Math.PI * 34;
 
-  let turnsLeft  = MAX_TURNS;
-  let timerSec   = TIMER_SECS;
+  let timerSec      = TIMER_SECS;
   let timerInterval = null;
-  let gameOver   = false;
-  let cardRewards = []; // reward được assign cho mỗi thẻ
+  let gameOver      = false;
+  let cardRewards   = [];
+  let pendingCard   = null;   // thẻ đầu tiên đang chờ so sánh
+  let pendingIdx    = null;
+  let lockBoard     = false;  // ngăn click trong lúc animate
+  let wonPrizes     = [];     // danh sách phần thưởng đã match được
+  let hideResultTimeout = null;
 
   // ── DOM refs ────────────────────────────────────
-  const overlay      = document.getElementById('gacha-overlay');
-  const btnOpen      = document.getElementById('btn-open-gacha');
-  const btnClose     = document.getElementById('gacha-close');
-  const grid         = document.getElementById('gacha-grid');
-  const turnsEl      = document.getElementById('gacha-turns-left');
-  const timerNumEl   = document.getElementById('gacha-timer-num');
-  const ringFill     = document.getElementById('ring-fill');
-  const resultBox    = document.getElementById('gacha-result');
-  const resultInner  = document.getElementById('gacha-result-inner');
-  const hintText     = document.getElementById('gacha-hint-text');
+  const overlay    = document.getElementById('gacha-overlay');
+  const btnOpen    = document.getElementById('btn-open-gacha');
+  const btnClose   = document.getElementById('gacha-close');
+  const grid       = document.getElementById('gacha-grid');
+  const timerNumEl = document.getElementById('gacha-timer-num');
+  const ringFill   = document.getElementById('ring-fill');
+  const resultBox  = document.getElementById('gacha-result');
+  const resultInner= document.getElementById('gacha-result-inner');
+  const hintText   = document.getElementById('gacha-hint-text');
+  const summaryEl  = document.getElementById('gacha-summary');
 
-  // ── Helpers ─────────────────────────────────────
-  function roll() {
-    const total = REWARDS.reduce((s, r) => s + r.weight, 0);
-    let rand = Math.random() * total;
-    for (const r of REWARDS) {
-      rand -= r.weight;
-      if (rand <= 0) return r;
+  // ── Shuffle ──────────────────────────────────────
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
     }
-    return REWARDS[0];
+    return a;
+  }
+
+  // ── Build card DOM ───────────────────────────────
+  function makeCardBack(reward) {
+    const back = document.createElement('div');
+    back.className = `g-card-back tier-${reward.tier}`;
+    if (reward.img) {
+      back.innerHTML = `
+        <img class="reward-img" src="${reward.img}"
+             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
+             alt="${reward.name}" />
+        <span class="reward-icon" style="display:none">${reward.icon}</span>
+        <span class="reward-name">${reward.name}</span>`;
+    } else {
+      back.innerHTML = `
+        <span class="reward-icon">${reward.icon}</span>
+        <span class="reward-name">${reward.name}</span>`;
+    }
+    return back;
   }
 
   function buildCards() {
     grid.innerHTML = '';
-    cardRewards = [];
-
-    // Assign rewards — guarantee tier-1 shows ≥1 times to keep promise
-    for (let i = 0; i < TOTAL_CARDS; i++) {
-      cardRewards.push(roll());
-    }
+    cardRewards = shuffle(BOARD_TEMPLATE);
 
     cardRewards.forEach((reward, i) => {
-      const card = document.createElement('div');
+      const card  = document.createElement('div');
       card.className = 'g-card';
       card.dataset.index = i;
       card.style.setProperty('--i', i);
@@ -465,104 +463,126 @@ function initGacha() {
       const inner = document.createElement('div');
       inner.className = 'g-card-inner';
 
-      // Front
       const front = document.createElement('div');
       front.className = 'g-card-front';
-      front.innerHTML = `
-        <span class="card-deco">✨</span>
-        <span class="card-num">${String(i + 1).padStart(2,'0')}</span>
-      `;
-
-      // Back
-      const back = document.createElement('div');
-      back.className = `g-card-back tier-${reward.tier}`;
-
-      if (reward.tier === 'miss') {
-        back.innerHTML = `
-          <span class="reward-icon">${reward.icon}</span>
-          <span class="reward-name">${reward.name}</span>
-        `;
-      } else if (reward.img) {
-        back.innerHTML = `
-          <img class="reward-img"
-               src="${reward.img}"
-               onerror="this.style.display='none';this.previousSibling && (this.previousSibling.style.display='block')"
-               alt="${reward.name}" />
-          <span class="reward-icon" style="display:none">${reward.icon}</span>
-          <span class="reward-name">${reward.name}</span>
-        `;
-      } else {
-        back.innerHTML = `
-          <span class="reward-icon">${reward.icon}</span>
-          <span class="reward-name">${reward.name}</span>
-        `;
-      }
+      front.innerHTML = `<span class="card-deco">✨</span><span class="card-num">${String(i+1).padStart(2,'0')}</span>`;
 
       inner.appendChild(front);
-      inner.appendChild(back);
+      inner.appendChild(makeCardBack(reward));
       card.appendChild(inner);
-
       card.addEventListener('click', () => onCardClick(card, i));
       grid.appendChild(card);
     });
   }
 
+  // ── Click handler (match-2 logic) ───────────────
   function onCardClick(card, idx) {
-    if (gameOver || card.classList.contains('flipped') || turnsLeft <= 0) return;
+    if (gameOver || lockBoard) return;
+    if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
 
-    card.classList.add('flipped', 'used');
-    turnsLeft--;
-    turnsEl.textContent = turnsLeft;
+    card.classList.add('flipped');
 
-    const reward = cardRewards[idx];
-    showResult(reward);
-
-    if (turnsLeft <= 0) {
-      setTimeout(() => endGame(), 800);
+    if (pendingCard === null) {
+      // Lật thẻ đầu tiên → chờ thẻ thứ 2
+      pendingCard = card;
+      pendingIdx  = idx;
+      hintText.textContent = 'Chọn thẻ thứ 2 để so sánh...';
+      return;
     }
-  }
 
-  function showResult(reward) {
-    resultBox.classList.remove('hidden');
-    hideResultTimeout = setTimeout(() => resultBox.classList.add('hidden'), 2200);
+    // Lật thẻ thứ 2 → so sánh
+    lockBoard = true;
+    const firstCard  = pendingCard;
+    const firstIdx   = pendingIdx;
+    pendingCard = null;
+    pendingIdx  = null;
 
-    if (reward.tier === 'miss') {
-      resultInner.innerHTML = `
-        <div class="result-icon">🌙</div>
-        <div class="result-title">Lần này chưa trúng</div>
-        <div class="result-miss">${reward.name}</div>
-        <div class="result-close-hint">tự tắt sau 2s</div>
-      `;
+    const r1 = cardRewards[firstIdx];
+    const r2 = cardRewards[idx];
+
+    if (r1.id === r2.id && r1.tier !== 'miss') {
+      // ✅ Match!
+      setTimeout(() => {
+        firstCard.classList.add('matched');
+        card.classList.add('matched');
+        lockBoard = false;
+        wonPrizes.push(r1);
+        showMatchResult(r1);
+        hintText.textContent = 'Lật thêm thẻ để tìm cặp khác ✨';
+
+        // Kiểm tra còn thẻ có thể match không
+        if (allPairsFound()) setTimeout(() => endGame(), 800);
+      }, 600);
     } else {
-      const prizeClass = reward.tier === 3 ? 'gold' : '';
-      resultInner.innerHTML = `
-        <div class="result-icon">${reward.icon}</div>
-        <div class="result-title">🎉 Chúc mừng!</div>
-        <div class="result-prize ${prizeClass}">${reward.name}</div>
-        <div class="result-close-hint">tự tắt sau 2s</div>
-      `;
-      launchConfetti(reward.tier === 3 ? 150 : 60);
+      // ❌ Không khớp → lật úp lại sau 1s
+      setTimeout(() => {
+        firstCard.classList.remove('flipped');
+        card.classList.remove('flipped');
+        lockBoard = false;
+        hintText.textContent = r2.tier === 3
+          ? '💸 5 tỷ... tiếc quá nhỉ~ Tìm cặp khác đi em!'
+          : 'Chưa khớp, thử lại nào ✨';
+      }, 1000);
     }
   }
 
-  let hideResultTimeout = null;
+  function allPairsFound() {
+    // Còn thẻ chưa flipped/matched và không phải billion/miss → còn cặp
+    const unmatched = cardRewards.filter((r, i) => {
+      const card = grid.children[i];
+      return !card.classList.contains('matched') && r.tier !== 'miss' && r.tier !== 3;
+    });
+    return unmatched.length === 0;
+  }
 
+  // ── Result popup ─────────────────────────────────
+  function showMatchResult(reward) {
+    clearTimeout(hideResultTimeout);
+    resultBox.classList.remove('hidden');
+    const prizeClass = reward.tier === 3 ? 'gold' : '';
+    resultInner.innerHTML = `
+      <div class="result-icon">${reward.icon}</div>
+      <div class="result-title">🎉 Khớp rồi!</div>
+      <div class="result-prize ${prizeClass}">${reward.name}</div>
+      <div class="result-close-hint">tự tắt sau 2s</div>`;
+    launchConfetti(reward.tier === 3 ? 150 : 60);
+    hideResultTimeout = setTimeout(() => resultBox.classList.add('hidden'), 2200);
+  }
+
+  // ── End game & summary ───────────────────────────
   function endGame() {
     gameOver = true;
     stopTimer();
+    clearTimeout(hideResultTimeout);
+    resultBox.classList.add('hidden');
 
-    // Lật hết các thẻ còn lại
-    document.querySelectorAll('.g-card:not(.flipped)').forEach(c => {
-      c.classList.add('flipped', 'used');
+    // Lật hết thẻ còn lại
+    Array.from(grid.children).forEach(c => {
+      if (!c.classList.contains('flipped')) c.classList.add('flipped', 'dimmed');
     });
 
-    resultBox.classList.add('hidden');
-    hintText.textContent = 'Hết lượt rồi! Hy vọng em thích quà nhé 🎁';
+    // Hiện summary
+    summaryEl.classList.remove('hidden');
+    if (wonPrizes.length === 0) {
+      summaryEl.innerHTML = `
+        <div class="summary-title">⏰ Hết giờ rồi!</div>
+        <div class="summary-empty">Lần này em chưa trúng gì cả... 🌙<br>Nhưng anh vẫn thương em nhiều lắm! 💕</div>`;
+    } else {
+      const rows = wonPrizes.map(p =>
+        `<div class="summary-item">${p.icon} <span>${p.name}</span></div>`
+      ).join('');
+      summaryEl.innerHTML = `
+        <div class="summary-title">🎁 Phần thưởng của em</div>
+        <div class="summary-list">${rows}</div>
+        <div class="summary-note">Anh sẽ lo hết nha! 💕</div>`;
+    }
+
+    hintText.textContent = '';
   }
 
   // ── Timer ────────────────────────────────────────
   function startTimer() {
-    timerSec   = TIMER_SECS;
+    timerSec = TIMER_SECS;
     timerNumEl.textContent = timerSec;
     ringFill.style.strokeDashoffset = 0;
     timerNumEl.classList.remove('urgent');
@@ -571,15 +591,12 @@ function initGacha() {
     timerInterval = setInterval(() => {
       timerSec--;
       timerNumEl.textContent = timerSec;
-
       const progress = (TIMER_SECS - timerSec) / TIMER_SECS;
       ringFill.style.strokeDashoffset = CIRCUMFERENCE * progress;
-
       if (timerSec <= 10) {
         timerNumEl.classList.add('urgent');
         ringFill.classList.add('urgent');
       }
-
       if (timerSec <= 0) endGame();
     }, 1000);
   }
@@ -589,14 +606,17 @@ function initGacha() {
     timerInterval = null;
   }
 
-  // ── Open / Close ────────────────────────────────
+  // ── Open / Close ─────────────────────────────────
   function openModal() {
-    // Reset state
-    turnsLeft = MAX_TURNS;
-    gameOver  = false;
-    turnsEl.textContent = turnsLeft;
+    gameOver     = false;
+    pendingCard  = null;
+    pendingIdx   = null;
+    lockBoard    = false;
+    wonPrizes    = [];
+    summaryEl.classList.add('hidden');
+    summaryEl.innerHTML = '';
     resultBox.classList.add('hidden');
-    hintText.textContent = 'Chọn một thẻ bất kỳ để lật ✨';
+    hintText.textContent = 'Lật 2 thẻ giống nhau để trúng thưởng ✨';
 
     buildCards();
     overlay.classList.remove('hidden');
@@ -613,9 +633,7 @@ function initGacha() {
 
   btnOpen.addEventListener('click', openModal);
   btnClose.addEventListener('click', closeModal);
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) closeModal();
-  });
+  overlay.addEventListener('click', e => { if (e.target === overlay) closeModal(); });
 }
 
 // ── CONFETTI ─────────────────────────────────────────
