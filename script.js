@@ -441,10 +441,7 @@ function initGacha() {
     back.className = `g-card-back tier-${reward.tier}`;
     if (reward.img) {
       back.innerHTML = `
-        <img class="reward-img" src="${reward.img}"
-             onerror="this.style.display='none';this.nextElementSibling.style.display='block'"
-             alt="${reward.name}" />
-        <span class="reward-icon" style="display:none">${reward.icon}</span>
+        <img class="reward-img" src="${reward.img}" alt="${reward.name}" />
         <span class="reward-name">${reward.name}</span>`;
     } else {
       back.innerHTML = `
