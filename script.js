@@ -382,7 +382,7 @@ function initGacha() {
   // ── Reward definitions ──────────────────────────
   const R = {
     money:        { id: 'money_3030',    tier: 1,      icon: '💵', name: '3.030 VNĐ' },
-    wash:         { id: 'face_wash',     tier: 2,      icon: '🫧', name: 'Máy rửa mặt', img: 'photos/reward-facewash.jpg' },
+    wash:         { id: 'face_wash',     tier: 2,      icon: '🫧', name: 'Máy rửa mặt', img: 'f055950658dcd6828fcd.jpg' },
     miss:         { id: 'miss',          tier: 'miss', icon: '🌙', name: 'Chúc em ngủ ngon~' },
     billion:      { id: 'billion',       tier: 3,      icon: '💰', name: '5.000.000.000 VNĐ' },
     // Thẻ trá hình: trông như miss khi lật, nhưng cuối game lộ ra là 5 tỷ
