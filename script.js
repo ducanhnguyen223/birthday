@@ -7,11 +7,11 @@ const CONFIG = {
   birthdayDate: new Date('2026-03-03T00:00:00'),
   name: 'Thùy Linh',
   galleryImages: [
-    { src: '0f52494e-9164-47ea-8471-b6eb4e7735c6.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
-    { src: '2c066cbd-f381-463a-8176-eebb6381faac.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
-    { src: '4aca591a-f933-49a8-8d7c-7db20c536d55.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
-    { src: 'c1db9dc4-56db-457b-a3cf-c7c05b9c46d7.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
-    { src: 'f5e1266a-0d3d-4228-b2de-d4ba4bbf2378.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
+    { src: 'photos/0f52494e-9164-47ea-8471-b6eb4e7735c6.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
+    { src: 'photos/2c066cbd-f381-463a-8176-eebb6381faac.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
+    { src: 'photos/4aca591a-f933-49a8-8d7c-7db20c536d55.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
+    { src: 'photos/c1db9dc4-56db-457b-a3cf-c7c05b9c46d7.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
+    { src: 'photos/f5e1266a-0d3d-4228-b2de-d4ba4bbf2378.jpeg', caption: 'Angel Collection 2026', date: '03/2026' },
   ],
   particles: ['💕', '🌸', '✨', '💖', '🌷', '💫', '🎀'],
 };
@@ -382,7 +382,7 @@ function initGacha() {
   // ── Reward definitions ──────────────────────────
   const R = {
     money:        { id: 'money_3030',    tier: 1,      icon: '💵', name: '3.030 VNĐ' },
-    wash:         { id: 'face_wash',     tier: 2,      icon: '🫧', name: 'Máy rửa mặt', img: 'f055950658dcd6828fcd.jpg' },
+    wash:         { id: 'face_wash',     tier: 2,      icon: '🫧', name: 'Máy rửa mặt', img: 'photos/f055950658dcd6828fcd.jpg' },
     miss:         { id: 'miss',          tier: 'miss', icon: '🌙', name: 'Chúc em ngủ ngon~' },
     billion:      { id: 'billion',       tier: 3,      icon: '💰', name: '5.000.000.000 VNĐ' },
     // Thẻ trá hình: trông như miss khi lật, nhưng cuối game lộ ra là 5 tỷ
